@@ -6,10 +6,10 @@ from bson.objectid import ObjectId
 from bson.errors import InvalidId
 from copy import deepcopy
 
-from steward import user_pb2 as u
-from steward import maintenance_pb2 as m
-from steward import asset_pb2 as a
-from steward import schedule_pb2 as s
+from proto.steward import user_pb2 as u
+from proto.steward import maintenance_pb2 as m
+from proto.steward import asset_pb2 as a
+from proto.steward import schedule_pb2 as s
 
 FLAGS=flags.FLAGS
 

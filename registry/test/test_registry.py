@@ -5,11 +5,11 @@ from registry import storage, user_server
 
 from pprint import pprint
 
-from steward.user_pb2 import User, GetUserRequest, CreateUserRequest, DeleteUserRequest, UpdateUserRequest
+from proto.steward.user_pb2 import User, GetUserRequest, CreateUserRequest, DeleteUserRequest, UpdateUserRequest
 
 @pytest.fixture(scope='module')
 def grpc_add_to_server():
-    from steward.registry_pb2_grpc import add_UserServiceServicer_to_server
+     from proto.steward.registry_pb2_grpc import add_UserServiceServicer_to_server
     return add_UserServiceServicer_to_server
 
 @pytest.fixture(scope='module')
@@ -24,7 +24,7 @@ def grpc_servicer():
 
 @pytest.fixture(scope='module')
 def grpc_stub_cls(grpc_channel):
-    from steward.registry_pb2_grpc import UserServiceStub
+     from proto.steward.registry_pb2_grpc import UserServiceStub
     return UserServiceStub
 
 

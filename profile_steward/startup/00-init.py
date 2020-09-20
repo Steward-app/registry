@@ -1,9 +1,9 @@
 import grpc, os
 from absl import logging, flags
-from steward import user_pb2 as u
-from steward import maintenance_pb2 as m
-from steward import asset_pb2 as a
-from steward import registry_pb2_grpc
+from proto.steward import user_pb2 as u
+from proto.steward import maintenance_pb2 as m
+from proto.steward import asset_pb2 as a
+from proto.steward import registry_pb2_grpc
 
 FLAGS = flags.FLAGS
 

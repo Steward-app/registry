@@ -7,8 +7,8 @@ from grpc_reflection.v1alpha import reflection
 from registry import storage, server_flags, sentry
 from registry.decorators import must_have, must_have_any
 
-from steward import maintenance_pb2 as m
-from steward import registry_pb2_grpc, registry_pb2
+from proto.steward import maintenance_pb2 as m
+from proto.steward import registry_pb2_grpc, registry_pb2
 
 FLAGS = flags.FLAGS
 
