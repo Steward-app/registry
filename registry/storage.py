@@ -1,4 +1,6 @@
 from absl import logging, flags
+import urllib.parse
+import sys
 
 import pymongo
 from google.protobuf.json_format import MessageToDict, ParseDict
@@ -14,7 +16,11 @@ from proto.steward import schedule_pb2 as s
 FLAGS=flags.FLAGS
 
 flags.DEFINE_enum('env', 'dev', ['dev', 'testing', 'prod'], 'Environment to use.')
-flags.DEFINE_string('db', 'mongodb://localhost:27017', 'MongoDB connection string.')
+flags.DEFINE_string('db', 'localhost:27017', 'MongoDB host:port')
+flags.DEFINE_string('db_username', 'steward', 'MongoDB username')
+flags.DEFINE_string('db_password', '', 'MongoDB password')
+flags.DEFINE_string('db_authdb', '', 'MongoDB authdb. If not defined, default admin used.')
+flags.DEFINE_integer('db_timeout', '100', 'MongoDB connection timeout in milliseconds')
 
 class Collection():
     def __init__(self, collection, proto):
@@ -106,8 +112,27 @@ class Collection():
 
 class StorageManager():
     def __init__(self):
-        self.mongo_client = pymongo.MongoClient(FLAGS.db)
-        database_name = 'steward-' + FLAGS.env
+        if FLAGS.db_username and FLAGS.db_password:
+            username = urllib.parse.quote_plus(FLAGS.db_username)
+            password = urllib.parse.quote_plus(FLAGS.db_password)
+
+        connection_string = 'mongodb://{username}:{password}@{host}'.format(
+                username = FLAGS.db_username,
+                password = FLAGS.db_password,
+                host = FLAGS.db
+        )
+        if FLAGS.db_authdb:
+            connection_string += '/?authSource={authdb}'.format(authdb=FLAGS.db_authdb)
+        try:
+            self.mongo_client = pymongo.MongoClient(connection_string, serverSelectionTimeoutMS=FLAGS.db_timeout)
+        # Test the connection
+            self.mongo_client.server_info()
+        except (pymongo.errors.ServerSelectionTimeoutError, pymongo.errors.OperationFailure) as e:
+            logging.error('Failed connection to {connection}: {error}'.format(connection=connection_string, error=e))
+            sys.exit(1)
+
+
+        database_name = 'steward_' + FLAGS.env
         self.db = self.mongo_client[database_name]
 
         self.users = Collection(self.db.user, u.User)
