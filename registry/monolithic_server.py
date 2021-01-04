@@ -8,7 +8,7 @@ from proto.steward import maintenance_pb2 as m
 from proto.steward import asset_pb2 as a
 from proto.steward import schedule_pb2 as s
 from proto.steward import registry_pb2_grpc, registry_pb2
-from registry import server_flags, storage, user_server, maintenance_server, asset_server, schedule_server, sentry
+from registry import server_flags, server_info, storage, user_server, maintenance_server, asset_server, schedule_server, sentry
 from registry.monitoring import psi
 
 FLAGS = flags.FLAGS
@@ -17,6 +17,7 @@ FLAGS = flags.FLAGS
 #flags.DEFINE_string('listen_addr', '[::]:50051', 'Address to listen.')
 
 def serve(argv):
+    server_info.log_server_info()
     sentry.init(FLAGS.sentry)
 
     sm = storage.StorageManager()
