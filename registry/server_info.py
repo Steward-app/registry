@@ -1,10 +1,8 @@
 from absl import logging
-import git
 import socket
+import registry
 
 def log_server_info():
-    repo = git.Repo(search_parent_directories=True)
     ip = str(socket.gethostbyname_ex(socket.gethostname()))
-    sha = repo.head.object.hexsha
-    info = 'rev: {rev} addr: {ip}'.format(rev=sha, ip=ip)
+    info = 'version: {version} addr: {ip}'.format(version=registry.__version__, ip=ip)
     logging.info(info)

@@ -2,7 +2,6 @@ googleapis-common-protos
 absl-py
 protobuf
 grpcio
-gitpython
 
 sentry-sdk
 grpcio-reflection
