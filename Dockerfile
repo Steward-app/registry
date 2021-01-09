@@ -6,4 +6,4 @@ ADD . /app/
 
 RUN pip install -r requirements.txt
 
-CMD ["python", "-m", "registry.monolithic_server", "--flagfile=prod.flags"]
+ENTRYPOINT python -m registry.${SERVICE}_server --flagfile=prod.flags
