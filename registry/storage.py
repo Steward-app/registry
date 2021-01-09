@@ -128,8 +128,10 @@ class StorageManager():
         # Test the connection
             self.mongo_client.server_info()
         except (pymongo.errors.ServerSelectionTimeoutError, pymongo.errors.OperationFailure) as e:
-            logging.error('Failed connection to {connection}: {error}'.format(connection=connection_string, error=e))
-            sys.exit(1)
+            logging.error('Failed to connect to MongoDB: {connection}'.format(
+                connection=connection_string.replace(FLAGS.db_password, '**password_redacted**'),
+                ))
+            raise
 
 
         database_name = 'steward_' + FLAGS.env
