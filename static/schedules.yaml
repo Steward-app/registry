@@ -1,0 +1,17 @@
+schedules:
+  days:
+    description: "Schedule in days"
+    interval:
+      seconds: 86400
+  weeks:
+    description: "Schedule in weeks"
+    interval:
+      seconds: 604800
+  months:
+    description: "Schedule in months"
+    interval:
+      seconds: 2.628e+6
+  years:
+    description: "Schedule in years"
+    interval:
+      seconds: 3.154e+7

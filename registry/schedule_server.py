@@ -1,78 +1,44 @@
 from concurrent import futures
 from absl import logging, flags, app
+from box import Box
+import yaml
 
 import grpc
 from grpc_reflection.v1alpha import reflection
 
-from registry import storage, server_flags, sentry
+from registry import server_flags, sentry
 from registry.decorators import must_have, must_have_any
 
 from proto.steward import schedule_pb2 as s
 from proto.steward import registry_pb2_grpc, registry_pb2
+from google.protobuf.json_format import MessageToDict, ParseDict
 
 FLAGS = flags.FLAGS
 
+flags.DEFINE_string('schedule_config', 'static/schedules.yaml', 'Path to schedule config')
+
 class ScheduleServiceServicer(registry_pb2_grpc.ScheduleServiceServicer):
-    def __init__(self, storage_manager=None, argv=None):
-        if not storage_manager:
-            self.storage = storage.StorageManager()
-        else:
-            self.storage = storage_manager
+    def __init__(self, argv=None):
+        with open(FLAGS.schedule_config) as config:
+            config = yaml.safe_load(config)
+            # Box up the dict to make it's use identical to the storage module
+            self.storage = Box(config)
         logging.info('ScheduleService initialized.')
 
     @must_have('_id', s.Schedule)
     def GetSchedule(self, request, context):
         schedule_id = request._id
-        if schedule_id:
-            schedule = self.storage.schedules[schedule_id]
-
-        if schedule == s.Schedule():
+        if schedule_id and schedule_id in self.storage.schedules:
+            schedule = ParseDict(self.storage.schedules[schedule_id].to_dict(), s.Schedule())
+            return schedule
+        else:
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details('Schedule "{}" not found.'.format(request))
             return s.Schedule()
 
-        return schedule
-
-    @must_have('description', s.Schedule)
-    def CreateSchedule(self, request, context):
-        logging.info('Creating schedule from: {request}'.format(request=request))
-        return self.storage.schedules.new(request)
-
-    @must_have('_id', s.Schedule)
-    @must_have('schedule', s.Schedule)
-    def UpdateSchedule(self, request, context):
-        schedule_id = request._id
-        logging.info('UpdateSchedule {}'.format(schedule_id))
-        # only update if schedule exists
-        schedule = self.storage.schedules[schedule_id]
-        if schedule is not s.Schedule(): # if not empty
-            logging.info('UpdateSchedule, before update in dict: {}'.format(schedule))
-            schedule.MergeFrom(request.schedule)
-            logging.info('UpdateSchedule, merged Proto: {}'.format(schedule))
-            result = self.storage.schedules[schedule_id] = schedule
-            return self.GetSchedule(s.GetScheduleRequest(_id=schedule_id), context)
-        else:
-            context.set_code(grpc.StatusCode.NOT_FOUND)
-            context.set_details('Schedule id "{}" does not exist.'.format(schedule_id))
-            return s.Schedule()
-
-    @must_have('_id', s.Schedule)
-    def DeleteSchedule(self, request, context):
-        schedule_id = request._id
-
-        # only delete if schedule exists and we need to return the deleted schedule anyway
-        schedule = self.storage.schedules[schedule_id]
-        if schedule != s.Schedule():
-            del self.storage.schedules[schedule_id]
-            return schedule
-        else:
-            context.set_code(grpc.StatusCode.NOT_FOUND)
-            context.set_details('Schedule id "{}" does not exist.'.format(schedule_id))
-            return s.Schedule()
-
     def ListSchedules(self, request, context):
         for schedule in self.storage.schedules:
-            yield schedule
+            yield ParseDict(self.storage.schedules[schedule].to_dict(), s.Schedule())
 
 def serve(argv):
     from registry.monitoring import psi

@@ -7,3 +7,5 @@ sentry-sdk
 grpcio-reflection
 pymongo
 python-grpc-prometheus
+python-box
+pyyaml
