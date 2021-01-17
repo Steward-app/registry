@@ -2,10 +2,10 @@ googleapis-common-protos
 absl-py
 protobuf
 grpcio
+python-box[all]
 
 sentry-sdk
 grpcio-reflection
 pymongo
 python-grpc-prometheus
-python-box
 pyyaml
