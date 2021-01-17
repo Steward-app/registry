@@ -28,17 +28,22 @@ class ScheduleServiceServicer(registry_pb2_grpc.ScheduleServiceServicer):
     @must_have('_id', s.Schedule)
     def GetSchedule(self, request, context):
         schedule_id = request._id
+        return self._get_schedule(schedule_id)
+
+    def ListSchedules(self, request, context):
+        for schedule in self.storage.schedules:
+            yield self._get_schedule(schedule)
+
+    def _get_schedule(self, schedule_id):
         if schedule_id and schedule_id in self.storage.schedules:
             schedule = ParseDict(self.storage.schedules[schedule_id].to_dict(), s.Schedule())
+            schedule._id = schedule_id
             return schedule
         else:
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details('Schedule "{}" not found.'.format(request))
             return s.Schedule()
 
-    def ListSchedules(self, request, context):
-        for schedule in self.storage.schedules:
-            yield ParseDict(self.storage.schedules[schedule].to_dict(), s.Schedule())
 
 def serve(argv):
     from registry.monitoring import psi
