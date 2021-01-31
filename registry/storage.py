@@ -63,7 +63,7 @@ class Collection():
     def new(self, value):
         if not isinstance(value, self.proto):
             raise TypeError('{0} is not a valid type of data, expected {1}'.format(value, self.proto))
-        logging.info('Creating new storage object from ({typeof}): \'{value}\''.format(value=value, typeof=type(value)))
+        logging.debug('Creating new storage object from ({typeof}): \'{value}\''.format(value=value, typeof=type(value)))
         value = self._encode(value)
         result = self.collection.insert_one(value)
         key = result.inserted_id

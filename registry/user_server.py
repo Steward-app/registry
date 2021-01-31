@@ -29,6 +29,7 @@ class UserServiceServicer(registry_pb2_grpc.UserServiceServicer):
         elif email:
             return self.storage.users.get_by_attr(email=email)
 
+        logging.info('Unknown user: {}'.format(request.email))
         context.set_code(grpc.StatusCode.NOT_FOUND)
         context.set_details('User "{}" not found.'.format(request))
         return u.User()
@@ -43,6 +44,7 @@ class UserServiceServicer(registry_pb2_grpc.UserServiceServicer):
             user = u.User(name=request.name, email=request.email, password=request.password, available_effort=request.available_effort)
             return self.storage.users.new(user)
         else:
+            logging.info('Duplicate user: {}'.format(request.email))
             context.set_code(grpc.StatusCode.ALREADY_EXISTS)
             context.set_details('User "{}" already exists.'.format(request.email))
             return u.User()
@@ -53,12 +55,13 @@ class UserServiceServicer(registry_pb2_grpc.UserServiceServicer):
         # only update if user exists
         existing_user = self.storage.users[user_id]
         if existing_user != u.User(): # if not empty
-            logging.info('UpdateUser, before update in dict: {}'.format(existing_user))
+            logging.debug('UpdateUser, before update in dict: {}'.format(existing_user))
             existing_user.MergeFrom(request.user)
-            logging.info('UpdateUser, merged Proto: {}'.format(existing_user))
+            logging.debug('UpdateUser, merged Proto: {}'.format(existing_user))
             result = self.storage.users[user_id] = existing_user
             return self.GetUser(u.GetUserRequest(_id=user_id), context)
         else:
+            logging.info('Unknown user: {}'.format(request.email))
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details('User id "{}" does not exist.'.format(user_id))
             return u.User()
@@ -74,6 +77,7 @@ class UserServiceServicer(registry_pb2_grpc.UserServiceServicer):
             user._id = ''
             return user
         else:
+            logging.info('Unknown user: {}'.format(request.email))
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details('User id "{}" does not exist.'.format(user_id))
             return u.User()
