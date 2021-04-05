@@ -4,7 +4,11 @@ RUN mkdir /app
 WORKDIR /app
 ADD . /app
 
-RUN pip install poetry
+RUN apt update && apt install -y curl
+ENV POETRY_HOME="/opt/poetry"
+ENV PATH="$POETRY_HOME/bin:$PATH"
+RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+
 RUN poetry config virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
 
 ENTRYPOINT poetry run python -m registry.${SERVICE}_server
