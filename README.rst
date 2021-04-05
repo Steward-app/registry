@@ -1,5 +1,5 @@
-Steward.app
-=============
+Steward.app Registry
+=====================
 
 |docs| |ci| |coverage|
 
@@ -10,22 +10,20 @@ Lightweight maintenance DB. Still heavily in development.
 Installation
 ------------
 
-Python3.5 is the current minimum supported version of Python.
+Python3.8 is the current minimum supported/tested version of Python. You may have luck with versions as old as 3.5.
 
 .. code:: console
 
-       make dependencies # python requirements
-       make proto # proto client libraries
-       make app # frontend resources
-       make run_backend -j 10 # run backend microservices with defaults (set ARGS to override partially or BE_ARGS to completely)
-       make run_frontend # run frontend service with defaults (set FE_PORT)
+       make dependencies # python requirements, requires poetry to be installed
+       touch dev.flags # This means you'll use all defaults, add flags as needed
+       make run_dev # uses dev.flags
 
 
 API exploration
 ---------------
 .. code:: console
 
-       make run_backend_monolithic & # defaults assume MongoDB running on localhost
+       make run_dev & # defaults assume MongoDB running on localhost, tweak dev.flags to change
        evans -r
        steward@127.0.0.1:50051> show service # list services and their RPCs and request types
        steward@127.0.0.1:50051> service UserService # select service

@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "registry"
+version = "0.1.4"
+description = "Registry backend service for Steward-app"
+authors = ["Artanicus <artanicus@nocturnal.fi>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+googleapis-common-protos = "^1.53.0"
+absl-py = "^0.12.0"
+protobuf = "^3.15.7"
+grpcio = "^1.36.1"
+python-box = {extras = ["all"], version = "^5.3.0"}
+sentry-sdk = "^1.0.0"
+grpcio-reflection = "^1.36.1"
+pymongo = "^3.11.3"
+python-grpc-prometheus = "^0.2.0"
+PyYAML = "^5.4.1"
+dnspython = "^2.1.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.3"
+pytest-runner = "^5.3.0"
+pytest-grpc = "^0.8.0"
+pytest-profiling = "^1.7.0"
+coverage = "^5.5"
+codecov = "^2.1.11"
+bumpversion = "^0.6.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

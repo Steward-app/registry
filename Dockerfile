@@ -4,6 +4,7 @@ RUN mkdir /app
 WORKDIR /app
 ADD . /app/
 
-RUN pip install -r requirements.txt
+RUN pip install poetry
+RUN poetry config virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
 
-ENTRYPOINT python -m registry.${SERVICE}_server --flagfile=prod.flags
+ENTRYPOINT poetry run python -m registry.${SERVICE}_server --flagfile=prod.flags
