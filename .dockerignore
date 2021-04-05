@@ -1,0 +1,5 @@
+*.flags
+Makefile
+Dockerfile
+profile_steward
+README.*
