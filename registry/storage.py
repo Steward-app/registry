@@ -7,6 +7,7 @@ from google.protobuf.json_format import MessageToDict, ParseDict
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
 from copy import deepcopy
+from box import Box
 
 from proto.steward import user_pb2 as u
 from proto.steward import maintenance_pb2 as m
@@ -15,11 +16,16 @@ from proto.steward import asset_pb2 as a
 FLAGS=flags.FLAGS
 
 flags.DEFINE_enum('env', 'dev', ['dev', 'testing', 'prod'], 'Environment to use.')
-flags.DEFINE_string('db', 'localhost:27017', 'MongoDB host:port')
+flags.DEFINE_string('consul', None, 'Define ip address to enable Consul service disovery. A hostname will not work.')
+flags.DEFINE_integer('consul_port', 8600, 'Consul port')
+flags.DEFINE_string('db', 'localhost:27017', 'MongoDB host:port if Consul is not used.')
 flags.DEFINE_string('db_username', 'steward', 'MongoDB username')
 flags.DEFINE_string('db_password', '', 'MongoDB password')
 flags.DEFINE_string('db_authdb', '', 'MongoDB authdb. If not defined, default admin used.')
 flags.DEFINE_integer('db_timeout', '100', 'MongoDB connection timeout in milliseconds')
+
+# External services to which connections are maintained and available via StorageManager.uri[service]
+services = ['mongodb']
 
 class Collection():
     def __init__(self, collection, proto):
@@ -111,27 +117,25 @@ class Collection():
 
 class StorageManager():
     def __init__(self):
-        if FLAGS.db_username and FLAGS.db_password:
-            username = urllib.parse.quote_plus(FLAGS.db_username)
-            password = urllib.parse.quote_plus(FLAGS.db_password)
+        self.user = FLAGS.db_username
+        self.password = FLAGS.db_password
+        self.authdb = FLAGS.db_authdb
+        self.connection_string = None
+        self.mongo_client = None
 
-        connection_string = 'mongodb://{username}:{password}@{host}'.format(
-                username = FLAGS.db_username,
-                password = FLAGS.db_password,
-                host = FLAGS.db
-        )
-        if FLAGS.db_authdb:
-            connection_string += '/?authSource={authdb}'.format(authdb=FLAGS.db_authdb)
-        try:
-            self.mongo_client = pymongo.MongoClient(connection_string, serverSelectionTimeoutMS=FLAGS.db_timeout)
-        # Test the connection
-            self.mongo_client.server_info()
-        except (pymongo.errors.ServerSelectionTimeoutError, pymongo.errors.OperationFailure) as e:
-            logging.error('Failed to connect to MongoDB: {connection}'.format(
-                connection=connection_string.replace(FLAGS.db_password, '**password_redacted**'),
-                ))
-            raise
+        self.uri = Box()
+        if FLAGS.consul:
+            from dns import resolver
+            logging.info('Using Consul host: {host}'.format(host=FLAGS.consul))
+            self.resolver = resolver.Resolver()
+            self.resolver.port = FLAGS.consul_port
+            self.resolver.nameservers = [FLAGS.consul]
+            self.refresh_all()
+        else:
+            self.uri['mongodb'] = FLAGS.db
 
+        self.connection_string = self._build_connection_string()
+        self._init_client()
 
         database_name = 'steward_' + FLAGS.env
         self.db = self.mongo_client[database_name]
@@ -140,4 +144,59 @@ class StorageManager():
         self.maintenances = Collection(self.db.maintenance, m.Maintenance)
         self.assets = Collection(self.db.asset, a.Asset)
 
-        logging.info('StorageManager using {}/{}'.format(FLAGS.db, database_name))
+        logging.info('StorageManager backed by {}/{}'.format(self.uri['mongodb'], database_name))
+
+
+    def test(self):
+        try:
+            self.mongo_client.server_info()
+        except (pymongo.errors.ServerSelectionTimeoutError, pymongo.errors.OperationFailure) as e:
+            logging.error('Failed to connect to MongoDB: {connection}'.format(
+                connection=self.connection_string.replace(FLAGS.db_password, '**password_redacted**'),
+                ))
+            return False
+        else:
+            return True
+
+
+    def refresh(self, service):
+        if FLAGS.consul:
+            address = '{service}.service.consul.'.format(service=service)
+            srv = self.resolver.query(address, 'SRV')[0]
+            ip = self.resolver.query(srv.target, 'A')[0]
+            self.uri[service] = '{ip}:{port}'.format(ip=ip, port=srv.port)
+            self.connection_string = self._build_connection_string()
+            self._init_client()
+
+            logging.info('Resolved service {service} to {uri}'.format(
+                service = service,
+                uri = self.uri[service]
+            ))
+
+
+    def refresh_all(self):
+        if FLAGS.consul:
+            for service in services:
+                self.refresh(service)
+
+
+    def _init_client(self):
+        try:
+            self.mongo_client = pymongo.MongoClient(self.connection_string, serverSelectionTimeoutMS=FLAGS.db_timeout)
+            self.mongo_client.server_info()
+        except (pymongo.errors.ServerSelectionTimeoutError, pymongo.errors.OperationFailure) as e:
+            logging.error('Failed to connect to MongoDB: {connection}'.format(
+                connection=self.connection_string.replace(self.password, '**password_redacted**'),
+                ))
+            raise
+
+
+    def _build_connection_string(self):
+        connection_string = 'mongodb://{username}:{password}@{host}'.format(
+                username = self.user,
+                password = self.password,
+                host = self.uri['mongodb']
+        )
+        if self.authdb:
+            connection_string += '/?authSource={authdb}'.format(authdb=self.authdb)
+        return connection_string
