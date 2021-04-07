@@ -15,7 +15,7 @@ from proto.steward import asset_pb2 as a
 
 FLAGS=flags.FLAGS
 
-flags.DEFINE_enum('env', 'dev', ['dev', 'testing', 'prod'], 'Environment to use.')
+flags.DEFINE_enum('db_env', 'dev', ['dev', 'testing', 'prod'], 'Environment to use.')
 flags.DEFINE_string('consul', None, 'Define ip address to enable Consul service disovery. A hostname will not work.')
 flags.DEFINE_integer('consul_port', 8600, 'Consul port')
 flags.DEFINE_string('db', 'localhost:27017', 'MongoDB host:port if Consul is not used.')
@@ -140,7 +140,7 @@ class StorageManager():
         self.connection_string = self._build_connection_string()
         self._init_client()
 
-        database_name = 'steward_' + FLAGS.env
+        database_name = 'steward_' + FLAGS.db_env
         self.db = self.mongo_client[database_name]
 
         self.users = Collection(self.db.user, u.User)
