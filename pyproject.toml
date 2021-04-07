@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "registry"
-version = "0.2.2"
+version = "0.2.3"
 description = "Registry backend service for Steward-app"
 authors = ["Artanicus <artanicus@nocturnal.fi>"]
 license = "MIT"
