@@ -11,4 +11,4 @@ RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poet
 
 RUN poetry config virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
 
-ENTRYPOINT poetry run python -m registry.${SERVICE}_server
+ENTRYPOINT ["/app/entrypoint.sh" ]

@@ -20,9 +20,12 @@ flags.DEFINE_string('consul', None, 'Define ip address to enable Consul service 
 flags.DEFINE_integer('consul_port', 8600, 'Consul port')
 flags.DEFINE_string('db', 'localhost:27017', 'MongoDB host:port if Consul is not used.')
 flags.DEFINE_string('db_username', 'steward', 'MongoDB username')
-flags.DEFINE_string('db_password', '', 'MongoDB password')
-flags.DEFINE_string('db_authdb', '', 'MongoDB authdb. If not defined, default admin used.')
+flags.DEFINE_string('db_password', None, 'MongoDB password')
+flags.DEFINE_string('db_authdb', None, 'MongoDB authdb. If not defined, defaults are used.')
 flags.DEFINE_integer('db_timeout', '100', 'MongoDB connection timeout in milliseconds')
+
+# Unauthenticated databases are a bad idea, so require a password be given
+flags.mark_flag_as_required('db_password')
 
 # External services to which connections are maintained and available via StorageManager.uri[service]
 services = ['mongodb']
