@@ -16,8 +16,7 @@ from proto.steward import asset_pb2 as a
 FLAGS=flags.FLAGS
 
 flags.DEFINE_enum('db_env', 'dev', ['dev', 'testing', 'prod'], 'Environment to use.')
-flags.DEFINE_string('consul', None, 'Define ip address to enable Consul service disovery. A hostname will not work.')
-flags.DEFINE_integer('consul_port', 8600, 'Consul port')
+flags.DEFINE_bool('consul', False, 'Enable storage backend resolution via Consul.')
 flags.DEFINE_string('db', 'localhost:27017', 'MongoDB host:port if Consul is not used.')
 flags.DEFINE_string('db_username', 'steward', 'MongoDB username')
 flags.DEFINE_string('db_password', None, 'MongoDB password')
@@ -129,10 +128,8 @@ class StorageManager():
         self.uri = Box()
         if FLAGS.consul:
             from dns import resolver
-            logging.info('Using Consul host: {host}'.format(host=FLAGS.consul))
+            logging.info('Using Consul to resolve storage backends.')
             self.resolver = resolver.Resolver()
-            self.resolver.port = FLAGS.consul_port
-            self.resolver.nameservers = [FLAGS.consul]
             self.refresh_all()
         else:
             self.uri['mongodb'] = FLAGS.db
@@ -165,8 +162,8 @@ class StorageManager():
     def refresh(self, service):
         if FLAGS.consul:
             address = '{service}.service.consul.'.format(service=service)
-            srv = self.resolver.query(address, 'SRV')[0]
-            ip = self.resolver.query(srv.target, 'A')[0]
+            srv = self.resolver.resolve(address, 'SRV')[0]
+            ip = self.resolver.resolve(srv.target, 'A')[0]
             self.uri[service] = '{ip}:{port}'.format(ip=ip, port=srv.port)
             self.connection_string = self._build_connection_string()
             self._init_client()
